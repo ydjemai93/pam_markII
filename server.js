@@ -27,7 +27,7 @@ fastify.all('/incoming-call', async (request, reply) => {
   const twimlResponse = `
     <?xml version="1.0" encoding="UTF-8"?>
     <Response>
-      <Say>Bonjour, je suis Pam Mark II, votre IA. Veuillez patienter.</Say>
+      <Say>Bonjour, je suis Pam, votre IA. Veuillez patienter.</Say>
       <Connect>
         <Stream url="wss://${request.headers.host}/media-stream" />
       </Connect>
