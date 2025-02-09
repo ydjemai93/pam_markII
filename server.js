@@ -5,7 +5,7 @@ import { WebSocketServer } from 'ws';
 import 'colors';
 
 // Import des services (fichiers ES modules) depuis le dossier "services"
-import { RecordingService } from './services/recording-service.js';
+import { recordingService } from './services/recording-service.js';
 import { StreamService } from './services/stream-service.js';
 import { TranscriptionService } from './services/transcription-service.js';
 import { TextToSpeechService } from './services/tts-service.js';
