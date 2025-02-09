@@ -1,23 +1,23 @@
 {
   "name": "pam_markII",
   "version": "1.0.0",
-  "description": "Pam Mark II - Node microserver for Twilio & OpenAI",
+  "description": "Pam Mark II - Node microserver for Twilio & OpenAI (STT, LLM, TTS)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "keywords": [],
-  "author": "VotreNom",
+  "author": "YourNameOrOrg",
   "license": "ISC",
   "type": "module",
   "dependencies": {
     "colors": "^1.4.0",
     "dotenv": "^16.0.0",
     "fastify": "^4.0.0",
-    "node-fetch": "^3.0.0",
+    "node-fetch": "^3.3.1",
     "openai": "^4.0.0",
     "twilio": "^4.14.0",
     "uuid": "^9.0.0",
-    "ws": "^8.0.0"
+    "ws": "^8.13.0"
   }
 }
