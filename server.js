@@ -4,6 +4,7 @@ import { config } from 'dotenv';
 import { WebSocketServer } from 'ws';
 import 'colors';
 
+// Import de tous les services depuis le dossier ./services
 import { recordingService } from './services/recording-service.js';
 import { StreamService } from './services/stream-service.js';
 import { TranscriptionService } from './services/transcription-service.js';
@@ -15,19 +16,23 @@ config(); // Charge .env
 const fastify = Fastify();
 const PORT = process.env.PORT || 5050;
 
-// Route Twilio "incoming-call" => renvoie TwiML <Connect><Stream>
+/**
+ * Route Twilio: "A call comes in"
+ * Retourne un TwiML <Connect><Stream> vers wss://<host>/media-stream
+ */
 fastify.all('/incoming-call', async (request, reply) => {
   const callSid = request.body.CallSid || 'UnknownCallSid';
-  
-  // Optionnel: si on souhaite lancer un enregistrement d'appel Twilio
+
+  // Optionnel: démarrer un enregistrement Twilio si RECORDING_ENABLED === 'true'
   if (process.env.RECORDING_ENABLED === 'true') {
-    await recordingService(null, callSid); 
+    await recordingService(null, callSid);
   }
 
+  // TwiML de base renvoyant un <Connect><Stream>
   const twimlResponse = `
     <?xml version="1.0" encoding="UTF-8"?>
     <Response>
-      <Say>Bonjour, je suis Pam, votre IA. Veuillez patienter.</Say>
+      <Say>Bonjour, je suis Pam Mark II, votre IA. Patientez svp.</Say>
       <Connect>
         <Stream url="wss://${request.headers.host}/media-stream" />
       </Connect>
@@ -38,60 +43,61 @@ fastify.all('/incoming-call', async (request, reply) => {
   reply.send(twimlResponse);
 });
 
-// On va gérer le WebSocket sur le même server, route "/media-stream"
+// Création d'un serveur WebSocket pour gérer le flux Twilio Media Streams
 const wss = new WebSocketServer({ noServer: true });
 
 wss.on('connection', (ws) => {
-  console.log('Twilio connected to pam_markII (Media Streams)'.green);
+  console.log('Twilio a établi une connexion WS (pam_markII)'.green);
 
-  // Instantiate our services
+  // Instanciation des services
   const streamService = new StreamService(ws);
   const sttService = new TranscriptionService();
   const ttsService = new TextToSpeechService();
   const gptService = new GptService();
 
-  // GPT => TTS
+  // Lorsque GPT génère une réponse, on la transforme en audio (TTS)
   gptService.on('gptreply', (gptReply, interactionCount) => {
     ttsService.generate(gptReply, interactionCount);
   });
 
-  // TTS => audio => StreamService
+  // Lorsque TTS produit de l'audio, on l'envoie au flux Twilio
   ttsService.on('speech', (partialIndex, audioBase64, text, interactionCount) => {
     streamService.buffer(partialIndex, audioBase64);
   });
 
-  // STT => transcription => GPT
+  // Lorsque STT produit une transcription finale, on l'envoie au GPT
   sttService.on('transcription', (text) => {
     console.log(`STT final text => ${text}`.yellow);
     gptService.completion(text, 0); 
   });
 
-  // Ecoute les messages Twilio
+  // Écoute des messages WS depuis Twilio
   ws.on('message', (msg) => {
     const data = JSON.parse(msg);
+
     switch(data.event) {
       case 'start':
         console.log(`Media WS START: ${data.start.streamSid}`);
         streamService.setStreamSid(data.start.streamSid);
         break;
       case 'media':
-        // envoi du payload audio au STT
+        // data.media.payload = audio base64 (G.711)
         sttService.send(data.media.payload);
         break;
       case 'stop':
         console.log('Media WS STOP');
         break;
       default:
-        console.log(`Unhandled event: ${data.event}`.grey);
+        console.log(`Événement non géré : ${data.event}`.grey);
     }
   });
 
   ws.on('close', () => {
-    console.log('pam_markII Media Stream closed'.red);
+    console.log('Fermeture WebSocket pam_markII'.red);
   });
 });
 
-// Ecoute l'upgrade "HTTP => WS" pour "/media-stream"
+// Upgrade HTTP => WS pour la route "/media-stream"
 fastify.server.on('upgrade', (req, socket, head) => {
   if (req.url === '/media-stream') {
     wss.handleUpgrade(req, socket, head, (client) => {
@@ -100,7 +106,7 @@ fastify.server.on('upgrade', (req, socket, head) => {
   }
 });
 
-// Lancement
+// Lancement du serveur
 fastify.listen({ port: PORT }, (err, address) => {
   if (err) {
     console.error(err);
