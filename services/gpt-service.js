@@ -1,43 +1,40 @@
 // services/gpt-service.js
 import { EventEmitter } from 'events';
-import OpenAI from 'openai'; // v4 syntax
-import 'colors';
+import OpenAI from 'openai';
 
 export class GptService extends EventEmitter {
   constructor() {
     super();
-
-    // Instancie la classe OpenAI en lui passant la clé
+    // On initialise OpenAI avec la clé stockée dans .env
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     });
-
-    // Stocke le contexte de conversation
-    this.userContext = [
-      {
-        role: 'system',
-        content: 'You are Pam Mark II, an AI specialized in e-commerce and energy providers. Keep answers short and helpful.'
-      }
-    ];
     this.partialResponseIndex = 0;
   }
 
-  async completion(userText, interactionCount, role = 'user') {
-    // Ajoute la requête de l'utilisateur au contexte
-    this.userContext.push({ role, content: userText });
-
+  /**
+   * Appelle le modèle GPT-4o en créant une complétion chat
+   * @param {string} userText - Le texte envoyé par l'utilisateur
+   * @param {number} interactionCount - Compteur ou identifiant d'interaction
+   */
+  async completion(userText, interactionCount) {
     try {
-      // Appel chat completions
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-3.5-turbo', // ou 'gpt-4'
-        messages: this.userContext
-        // Pas de stream = on reçoit la réponse d'un coup
+      // Exemple minimal, basé sur le snippet officiel OpenAI
+      // On peut ajuster selon vos besoins (messages, store, etc.)
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4o',       // ou autre modèle ex. 'gpt-4o-mini'
+        messages: [
+          { role: 'developer', content: 'You are a helpful assistant.' },
+          { role: 'user', content: userText }
+        ],
+        store: true            // cf. snippet fourni (stocke la conversation côté OpenAI)
       });
 
-      const text = response.choices[0].message.content;
-      console.log(`GPT => ${text}`.green);
+      // Récupération du texte de la réponse
+      const text = completion.choices[0].message.content;
+      console.log('GPT =>', text);
 
-      // On coupe la réponse en symboles "•" si vous voulez un chunk TTS
+      // Si vous voulez découper la réponse en symboles "•" pour TTS chunking :
       const splitted = text.split('•');
       for (const segment of splitted) {
         if (segment.trim().length > 0) {
@@ -45,16 +42,14 @@ export class GptService extends EventEmitter {
             partialResponseIndex: this.partialResponseIndex,
             partialResponse: segment.trim()
           };
+          // On émet un événement 'gptreply' => TTS
           this.emit('gptreply', gptReply, interactionCount);
           this.partialResponseIndex++;
         }
       }
 
-      // Ajoute la réponse finale au contexte
-      this.userContext.push({ role: 'assistant', content: text });
-
-    } catch (err) {
-      console.error('Error in GPT completion => ', err);
+    } catch (error) {
+      console.error('Error in GptService completion:', error);
     }
   }
 }
