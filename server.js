@@ -35,7 +35,7 @@ fastify.all('/incoming-call', async (request, reply) => {
 <Response>
   <Say>Bonjour, c'est Pam Mark II.</Say>
   <Connect>
-    <Stream url="wss://${request.headers.host}/media-stream" track="inbound" />
+    <Stream url="wss://${request.headers.host}/media-stream" track="both" />
   </Connect>
 </Response>`;
 
