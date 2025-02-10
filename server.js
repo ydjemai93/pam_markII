@@ -112,10 +112,11 @@ fastify.server.on('upgrade', (req, socket, head) => {
 });
 
 // Lance le serveur Fastify
-fastify.listen({ port: PORT }, (err, address) => {
+fastify.listen({ port: PORT, host: '0.0.0.0' }, (err, address) => {
   if (err) {
     console.error(err);
     process.exit(1);
   }
-  console.log(`pam_markII server listening on ${address}`.cyan);
+  console.log(`pam_markII server listening on ${address}`);
 });
+
