@@ -33,11 +33,12 @@ fastify.all('/incoming-call', async (request, reply) => {
     // On renvoie rapidement du TwiML
     const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say>Bonjour, c'est Pam Mark II. Veuillez patienter.</Say>
+  <Say>Bonjour, c'est Pam Mark II.</Say>
   <Connect>
-    <Stream url="wss://${request.headers.host}/media-stream" />
+    <Stream url="wss://${request.headers.host}/media-stream" track="inbound" />
   </Connect>
 </Response>`;
+
 
     reply.header('Content-Type', 'text/xml');
     reply.send(twimlResponse);
