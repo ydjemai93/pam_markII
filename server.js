@@ -34,15 +34,14 @@ fastify.all('/incoming-call', async (request, reply) => {
   const callSid = request.body?.CallSid || 'UnknownCallSid';
 
   // 1) Renvoyer le TwiML immédiatement
-  const twimlResponse = `
-    <?xml version="1.0" encoding="UTF-8"?>
+  const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
     <Response>
-      <Say>Bonjour, je suis Pam Mark II, l'IA. Patientez...</Say>
+      <Say>Bonjour, je suis Pam Mark II, l'IA. Patientez</Say>
       <Connect>
         <Stream url="wss://${request.headers.host}/media-stream" />
       </Connect>
-    </Response>
-  `;
+    </Response>`;
+  
   reply.header('Content-Type', 'text/xml');
   reply.send(twimlResponse);
 
